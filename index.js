@@ -9,8 +9,8 @@ module.exports = class AccessManager{
     this.mongoose = options.mongoose;
     this.selectSchemas();
     this.makeModels();
-    if(options.aclImport.run){ // import will shut down app when done
-      this.importAcl();
+    if(process.argv.join().includes('--import-acl')){
+      this.importAcl(); // import will shut down app when done
     }else{
       let session = new Session({model: this.models.session, userModel: this.models.user});
       let acl = new Acl({model: this.models.acl});
@@ -30,7 +30,7 @@ module.exports = class AccessManager{
       acl: {
         path: {type: String, unique: true},
         /*
-          Below, an array of a child role schema so on any given path we can assign atomic rights like: 
+          Below, an array of a child role schema so on any given path we can assign atomic rights like:
           path: 'news/*'
           roles: [
             {role: 'commenter', methods: 'POST'},
@@ -74,7 +74,11 @@ module.exports = class AccessManager{
   }
 
   importAcl(){
-    let jsonFile = this.options.aclImport.file || aclExampleFile;
+    let jsonFile = aclExampleFile;
+    let f = process.argv.join('$$$').split('--import-acl=');
+    if(f[1]){
+      jsonFile = f.split('$$$')[0];
+    }
     let entries = require(jsonFile);
     // save to the db
     let i = 0;
@@ -84,7 +88,7 @@ module.exports = class AccessManager{
         i++;
         if(i == entries.length){ // shutdown when we are done importing
           mongoose.connection.close(()=>{
-            console.log('Import done, mongoose connection closed');
+            console.log('ACL Import done, mongoose connection closed');
             process.exit(0);
           });
         }

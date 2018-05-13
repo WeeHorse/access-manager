@@ -7,22 +7,43 @@ A one-stop solution for implementing authenticated and anonymous sessions with u
 $ npm install access-manager
 ```
 
+### Install ACL data
+
+Use the switch when you start your app with access manager for the first time. (Note that your app will shut down once the import is done.)
+
+Use example data: (example-acl.json)
+
+```sh
+$ node app --import-acl
+```
+
+Or provide your own file:
+
+```sh
+$ node app --import-acl=file.json
+```
+
+
 ## Examples:
 
 ```JAVASCRIPT
-
 const AccessManager = require('access-manager');
 const accessManager = new AccessManager({
   mongoose: mongoose, // mongoose (connected)
-  expressApp: app, // an express app
-  aclImport:{
-    file: '', // a valid file path, if left empty, example data will be used if import is run
-    run: process.argv.includes('--import-acl-from-json') // example: node app --import-acl-from-json (switch to import file)
-  },
-   // You can add your own schemas for users, sessions and acl,
-   // just add them at the properties: userSchema, sessionSchema, aclSchema
-   // But note that some properties are required (more info to come)
-   // An example of using a custom userSchema:
+  expressApp: app // an express app
+});
+```
+
+You can optionally add your own schemas (Schema Objects) for users, sessions and acl, at the properties: _userSchema, sessionSchema, aclSchema_
+
+Some properties in the schemas are required by the access-manager. Those details can be found at the bottom of this document.
+
+You will propably want to supply your own userSchema, an example of doing that:
+
+```JAVASCRIPT
+const accessManager = new AccessManager({
+  mongoose: mongoose,
+  expressApp: app,
   userSchema: {
     firstName: {type: String, required:true},
     lastName: {type: String, required:true},
@@ -30,8 +51,9 @@ const accessManager = new AccessManager({
     password: {type: String, required:true}, // required access manager property
     roles: [String]  // required access manager property
   }
-});
+```
 
+```JAVASCRIPT
 // The models access manager uses are avaliable on access manager
 const User = accessManager.models.user;
 
@@ -71,3 +93,26 @@ app.get('/messages', async (req, res)=>{
 });
 
 ```
+
+## Access manager schemas requirements
+
+The schemas used in access manager must contain the properties detailed below. (If you don't supply your own schemas these are the defaults)
+
+The userSchema must have the properties:
+
+  "email" (string),
+  "password" (string)
+  "roles" (array of strings)
+
+The sessionSchema must have the properties:
+
+  "loggedIn" (bool)
+  "user" (reference)
+
+The aclSchema must have the properties:
+
+  "path" (string)
+  "roles" (array of child schema containing):
+    "role (string)
+    "methods (array of string with enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
+
