@@ -1,6 +1,6 @@
 {
   "name": "access-manager",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "A one-stop solution for implementing authenticated and anonymous continuous sessions with user handling and whitelisted acl.",
   "main": "index.js",
   "scripts": {
