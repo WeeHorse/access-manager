@@ -113,6 +113,7 @@ The aclSchema must have the properties:
 
   "path" (string)
   "roles" (array of child schema containing):
+
     "role (string)
     "methods (array of string with enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
 

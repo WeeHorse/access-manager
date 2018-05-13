@@ -77,7 +77,7 @@ module.exports = class AccessManager{
     let jsonFile = aclExampleFile;
     let f = process.argv.join('$$$').split('--import-acl=');
     if(f[1]){
-      jsonFile = f.split('$$$')[0];
+      jsonFile = f[1].split('$$$')[0];
     }
     let entries = require(jsonFile);
     // save to the db
