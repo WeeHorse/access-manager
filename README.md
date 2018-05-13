@@ -1,5 +1,9 @@
 # access-manager
-A one-stop solution for implementing authenticated and anonymous sessions with user handling and whitelisted ACL. Attaches itself to an express app as a middleware.
+
+© WeeHorse 2018, MIT license
+
+## Authentication, Sessions and ACL
+Access Manager is a one-stop solution for implementing authenticated and anonymous sessions with user handling and whitelisted ACL. Keeps the same session regardless of authenticated state. Attaches itself to an express app as a middleware.
 
 ## Install
 
@@ -26,7 +30,19 @@ $ node app --import-acl=file.json
 
 ## Examples:
 
+### Typical init with basic dependencies
+
 ```JAVASCRIPT
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+const mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost/some_database');
+
 const AccessManager = require('access-manager');
 const accessManager = new AccessManager({
   mongoose: mongoose, // mongoose (connected)
@@ -34,7 +50,9 @@ const accessManager = new AccessManager({
 });
 ```
 
-You can optionally add your own schemas (Schema Objects) for users, sessions and acl, at the properties: _userSchema, sessionSchema, aclSchema_
+### Configuration
+
+You can optionally add your own schemas (Schema Objects) for users, sessions and acl, at the properties: userSchema, sessionSchema, aclSchema
 
 Some properties in the schemas are required by the access-manager. Those details can be found at the bottom of this document.
 
@@ -53,23 +71,38 @@ const accessManager = new AccessManager({
   }
 ```
 
-```JAVASCRIPT
-// The models access manager uses are avaliable on access manager
-const User = accessManager.models.user;
+__The models access manager uses are then avaliable from access manager:__
 
-// Now access manager will do its work seamlessly in the background,
-// but we need a user: (The example ACL will only allow anonymous users and super users create accounts)
+```JAVASCRIPT
+const User = accessManager.models.user;
+```
+
+__Now access manager will do its work seamlessly in the background,
+but we need a user, so here's a registration route:__ 
+
+_The example ACL will only allow anonymous users and super users create accounts_
+
+```JAVASCRIPT
 app.post('/register', async (req, res)=>{
+  // encrypt password
+  req.body.password = await bcrypt.hash(req.body.password, saltRounds);
   // create user
   let user = await new User(req.body);
   await user.save();
   res.json({msg:'Registered'});
 });
+```
 
-// To login (The example ACL will prevent you from logging in if you are already in)
+__And login:__ 
+
+_The example ACL will prevent this route if you are already logged in_
+
+```JAVASCRIPT
 app.post('/login', async (req, res)=>{
-  // create login from user
-  if(passwordsMatch){
+  // find user
+  let user = await User.findOne({email: req.body.email});
+  // passwords match?
+  if(user && await bcrypt.compare(req.body.password, user.password)){
     req.session.user = user._id;
     req.session.loggedIn = true;
     await req.session.save(); // save the state
@@ -78,20 +111,45 @@ app.post('/login', async (req, res)=>{
     res.json({msg:'Failed login'});
   }
 });
+```
 
-// To logout (The example ACL will prevent you from logging out if you are already out)
+__To logout:__ 
+
+_The example ACL will prevent this route if you are already logged out_
+
+```JAVASCRIPT
 app.all('/logout', async (req, res)=>{
   req.user = {}; // we clear the user
   req.session.loggedIn = false; // but we retain the session with a logged out state, since this is better for tracking, pratical and security reasons
   await req.session.save(); // save the state
   res.json({msg:'Logged out'});
 });
+```
 
-// The example ACL would only allow this route on logged in users
+__A restricted example route:__ 
+
+_The example ACL will only allow this route on logged in users_
+
+```JAVASCRIPT
 app.get('/messages', async (req, res)=>{
   res.json({msg:'Here are your messages'});
 });
+```
 
+__Wildcard route (that takes any method) so we can test that the ACL blocks anything not allowed):__
+
+```JAVASCRIPT
+app.all('*', (req, res)=>{
+  res.json({params: req.params, body: req.body}); // just echo whatever we send
+});
+```
+
+__Don't forget...__
+
+```JAVASCRIPT
+app.listen(3000,()=>{
+  console.log("Remember Mystery science theatre 3000!");
+});
 ```
 
 ## Access manager schemas requirements
@@ -111,9 +169,10 @@ The sessionSchema must have the properties:
 
 The aclSchema must have the properties:
 
-  "path" (string)
-  "roles" (array of child schema containing):
+  	"path" (string)
+  	"roles" (array of child schema containing):
+   		"role (string)
+   		"methods (array of string with enum: 
+   			['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
 
-    "role (string)
-    "methods (array of string with enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
 
