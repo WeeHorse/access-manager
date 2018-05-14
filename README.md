@@ -13,7 +13,7 @@ $ npm install access-manager
 
 ### Install ACL data
 
-Use the switch when you start your app with access manager for the first time. (Note that your app will shut down once the import is done.)
+If you want some example data or wish to import your ACL from file, use the --import-acl switch when you start your app with access manager (for the first time). Note that your app will shut down once the import is done.
 
 Use example data: (example-acl.json)
 
@@ -26,6 +26,8 @@ Or provide your own file:
 ```sh
 $ node app --import-acl=file.json
 ```
+
+The ACL data installs into the acl collection. _Obviously you're free to populate the acl collection anyway you see fit._
 
 
 ## Examples:
@@ -154,25 +156,39 @@ app.listen(3000,()=>{
 
 ## Access manager schemas requirements
 
-The schemas used in access manager must contain the properties detailed below. (If you don't supply your own schemas these are the defaults)
+The schemas used in access manager must contain the properties detailed below. If you don't supply your own schemas these are the defaults:
 
-The userSchema must have the properties:
+_The mininum required userSchema:_
 
-    "email" (string),
-    "password" (string)
-    "roles" (array of strings)
+```javascript
+    {
+      email: {type: String, required:true, unique:true},
+      password: {type: String, required:true},
+      roles: [String]
+    }
+```
 
-The sessionSchema must have the properties:
+_The mininum required sessionSchema:_
 
-    "loggedIn" (bool)
-    "user" (reference)
+```javascript
+    {
+      loggedIn: {type:Boolean, default:false},
+      user: { type: this.mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }
+```
 
-The aclSchema must have the properties:
+_The mininum required aclSchema:_
 
-  	"path" (string)
-  	"roles" (array of child schema containing):
-   		"role (string)
-   		"methods (array of string with enum:
-   			['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
+```javascript
+    {
+      path: {type: String, unique: true},
+      roles: [
+        new this.mongoose.Schema({
+          role: String,
+          methods: [{type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL']}]
+        })
+      ]
+    }
+```
 
 
