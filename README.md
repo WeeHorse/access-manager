@@ -32,7 +32,7 @@ $ node app --import-acl=file.json
 
 ### Typical init with basic dependencies
 
-```JAVASCRIPT
+```javascript
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -58,7 +58,7 @@ Some properties in the schemas are required by the access-manager. Those details
 
 You will propably want to supply your own userSchema, an example of doing that:
 
-```JAVASCRIPT
+```javascript
 const accessManager = new AccessManager({
   mongoose: mongoose,
   expressApp: app,
@@ -73,16 +73,16 @@ const accessManager = new AccessManager({
 
 __The models access manager uses are then avaliable from access manager:__
 
-```JAVASCRIPT
+```javascript
 const User = accessManager.models.user;
 ```
 
 __Now access manager will do its work seamlessly in the background,
-but we need a user, so here's a registration route:__ 
+but we need a user, so here's a registration route:__
 
 _The example ACL will only allow anonymous users and super users create accounts_
 
-```JAVASCRIPT
+```javascript
 app.post('/register', async (req, res)=>{
   // encrypt password
   req.body.password = await bcrypt.hash(req.body.password, saltRounds);
@@ -93,11 +93,11 @@ app.post('/register', async (req, res)=>{
 });
 ```
 
-__And login:__ 
+__And login:__
 
 _The example ACL will prevent this route if you are already logged in_
 
-```JAVASCRIPT
+```javascript
 app.post('/login', async (req, res)=>{
   // find user
   let user = await User.findOne({email: req.body.email});
@@ -113,11 +113,11 @@ app.post('/login', async (req, res)=>{
 });
 ```
 
-__To logout:__ 
+__To logout:__
 
 _The example ACL will prevent this route if you are already logged out_
 
-```JAVASCRIPT
+```javascript
 app.all('/logout', async (req, res)=>{
   req.user = {}; // we clear the user
   req.session.loggedIn = false; // but we retain the session with a logged out state, since this is better for tracking, pratical and security reasons
@@ -126,11 +126,11 @@ app.all('/logout', async (req, res)=>{
 });
 ```
 
-__A restricted example route:__ 
+__A restricted example route:__
 
 _The example ACL will only allow this route on logged in users_
 
-```JAVASCRIPT
+```javascript
 app.get('/messages', async (req, res)=>{
   res.json({msg:'Here are your messages'});
 });
@@ -138,7 +138,7 @@ app.get('/messages', async (req, res)=>{
 
 __Wildcard route (that takes any method) so we can test that the ACL blocks anything not allowed):__
 
-```JAVASCRIPT
+```javascript
 app.all('*', (req, res)=>{
   res.json({params: req.params, body: req.body}); // just echo whatever we send
 });
@@ -146,7 +146,7 @@ app.all('*', (req, res)=>{
 
 __Don't forget...__
 
-```JAVASCRIPT
+```javascript
 app.listen(3000,()=>{
   console.log("Remember Mystery science theatre 3000!");
 });
@@ -158,21 +158,21 @@ The schemas used in access manager must contain the properties detailed below. (
 
 The userSchema must have the properties:
 
-  "email" (string),
-  "password" (string)
-  "roles" (array of strings)
+    "email" (string),
+    "password" (string)
+    "roles" (array of strings)
 
 The sessionSchema must have the properties:
 
-  "loggedIn" (bool)
-  "user" (reference)
+    "loggedIn" (bool)
+    "user" (reference)
 
 The aclSchema must have the properties:
 
   	"path" (string)
   	"roles" (array of child schema containing):
    		"role (string)
-   		"methods (array of string with enum: 
+   		"methods (array of string with enum:
    			['GET', 'POST', 'PUT', 'DELETE', 'ALL'])
 
 
