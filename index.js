@@ -80,6 +80,8 @@ module.exports = class AccessManager{
       jsonFile = f[1].split('$$$')[0];
     }
     let entries = require(jsonFile);
+    // drop previous acl
+    this.models.acl.collection.drop();
     // save to the db
     let i = 0;
     for(let entry of entries){
