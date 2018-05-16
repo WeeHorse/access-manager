@@ -17,8 +17,18 @@ module.exports = class Acl{
 
     // find ACL paths that maches roles
     let entries = await this.AclModel.find({
-      path: req.path,
+      //path: req.path,
       'roles.role':{$in: roles}
+    });
+
+    // new section to handle wildcard paths endings
+    // (would have prefered a good regex mongoose query)
+    entries = entries.filter( e => {
+      if(e.path.indexOf('*') == e.path.length - 1){ // wildcard end
+        return req.path.indexOf(e.path.split('*')[0]) > -1;
+      }else{ // find exact match
+        return e.path == req.path;
+      }
     });
 
     // now, do we have the proper method in any of our matched role(s)
