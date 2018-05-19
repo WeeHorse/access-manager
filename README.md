@@ -15,7 +15,7 @@ $ npm install access-manager
 
 If you want some example data or wish to import your ACL from file, use the --import-acl switch when you start your app with access manager (for the first time). Note that your app will shut down once the import is done.
 
-Use example data: (example-acl.json)
+Use example data: (see below)
 
 ```sh
 $ node app --import-acl
@@ -29,8 +29,24 @@ $ node app --import-acl=file.json
 
 The ACL data installs into the acl collection. _Obviously you're free to populate the acl collection anyway you see fit._
 
+#### The example ACL data:
 
-## Examples:
+```javascript
+[
+  {"path":"/rest/admin*", "roles":[ {"role": "admin", "methods": ["ALL"]}, {"role": "super", "methods": ["ALL"]} ]},
+  {"path":"/rest/login", "roles":[ {"role": "anonymous", "methods": ["POST"]} ]},
+  {"path":"/rest/logout", "roles":[ {"role": "user", "methods": ["GET","POST"]} ]},
+  {"path":"/rest/news*", "roles":[ {"role": "*", "methods": ["GET"]} ]},
+  {"path":"/rest/messages*", "roles":[ {"role": "user", "methods": ["GET","POST","DELETE"]} ]},
+  {"path":"/rest/user", "roles":[ {"role": "user", "methods": ["GET"]} ]},
+  {"path":"/rest/register", "roles":[ {"role": "anonymous", "methods": ["POST"]}, {"role": "super", "methods": ["POST"]} ]}
+]
+```
+
+__It works like this:__ Only the paths detailed above are valid paths together with the correct user role and method, all other paths will be blocked with 403 Forbidden. _You may end any path with a wildcard *, letting traffic through on all subpaths._
+
+
+## Examples of access-manager usage:
 
 ### Typical init with basic dependencies
 
@@ -44,6 +60,9 @@ const saltRounds = 10;
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost/some_database');
+
+// IMPORTANT - if you don't want to block frontend files with access-manager, serve them before access-manager:
+app.use(express.static('../client/'));
 
 const AccessManager = require('access-manager');
 const accessManager = new AccessManager({
@@ -85,7 +104,7 @@ but we need a user, so here's a registration route:__
 _The example ACL will only allow anonymous users and super users create accounts_
 
 ```javascript
-app.post('/register', async (req, res)=>{
+app.post('/rest/register', async (req, res)=>{
   // encrypt password
   req.body.password = await bcrypt.hash(req.body.password, saltRounds);
   // create user
@@ -100,7 +119,7 @@ __And login:__
 _The example ACL will prevent this route if you are already logged in_
 
 ```javascript
-app.post('/login', async (req, res)=>{
+app.post('/rest/login', async (req, res)=>{
   // find user
   let user = await User.findOne({email: req.body.email});
   // passwords match?
@@ -120,7 +139,7 @@ __To logout:__
 _The example ACL will prevent this route if you are already logged out_
 
 ```javascript
-app.all('/logout', async (req, res)=>{
+app.all('/rest/logout', async (req, res)=>{
   req.user = {}; // we clear the user
   req.session.loggedIn = false; // but we retain the session with a logged out state, since this is better for tracking, pratical and security reasons
   await req.session.save(); // save the state
@@ -133,8 +152,26 @@ __A restricted example route:__
 _The example ACL will only allow this route on logged in users_
 
 ```javascript
-app.get('/messages', async (req, res)=>{
+app.get('/rest/messages', async (req, res)=>{
   res.json({msg:'Here are your messages'});
+});
+```
+
+__The current user route:__
+
+_The example ACL will only allow this route on logged in users_
+
+```javascript
+app.get('/rest/user', (req, res)=>{
+  // check if there is a logged-in user and return that user
+  let response;
+  if(req.user._id){
+    response = req.user; // reply with the user object
+    response.password = '******'; // but do not send the password back
+  }else{
+    response = {message: 'Not logged in'};
+  }
+  res.json(response);
 });
 ```
 

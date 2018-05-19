@@ -24,6 +24,7 @@ module.exports = class Acl{
     // new section to handle wildcard paths endings
     // (would have prefered a good regex mongoose query)
     entries = entries.filter( e => {
+      // check for match with wildcard
       if(e.path.indexOf('*') == e.path.length - 1){ // wildcard end
         return req.path.indexOf(e.path.split('*')[0]) > -1;
       }else{ // find exact match
@@ -34,7 +35,10 @@ module.exports = class Acl{
     // now, do we have the proper method in any of our matched role(s)
     let remaining = [];
     for(let entry of entries){
-      let remRoles = entry.roles.filter(role => role.methods.includes(req.method));
+      let remRoles = entry.roles.filter(role => role.methods.includes(req.method)); //  || role.methods.includes('ALL') || role.methods.includes('*')
+      console.log('path', req.path, 'req.method', req.method);
+      console.log('remRoles', remRoles);
+      console.log('req.user.roles', req.user.roles);
       if(remRoles.length > 0){
         remaining.push(entry);
       }
