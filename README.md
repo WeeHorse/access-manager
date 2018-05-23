@@ -222,7 +222,7 @@ _The mininum required aclSchema:_
       roles: [
         new this.mongoose.Schema({
           role: String,
-          methods: [{type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL']}]
+          methods: [{type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL', '*']}]
         })
       ]
     }

@@ -35,10 +35,15 @@ module.exports = class Acl{
     // now, do we have the proper method in any of our matched role(s)
     let remaining = [];
     for(let entry of entries){
-      let remRoles = entry.roles.filter(role => role.methods.includes(req.method)); //  || role.methods.includes('ALL') || role.methods.includes('*')
-      console.log('path', req.path, 'req.method', req.method);
-      console.log('remRoles', remRoles);
-      console.log('req.user.roles', req.user.roles);
+      let remRoles = entry.roles.filter(role => {
+        if(role.methods.includes('*') || role.methods.includes('ALL')){
+          return true;
+        }
+        return role.methods.includes(req.method)
+      });
+      // console.log('path', req.path, 'req.method', req.method);
+      // console.log('remRoles', remRoles);
+      // console.log('req.user.roles', req.user.roles);
       if(remRoles.length > 0){
         remaining.push(entry);
       }

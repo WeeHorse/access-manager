@@ -40,7 +40,7 @@ module.exports = class AccessManager{
         roles: [
           new this.mongoose.Schema({
             role: String,
-            methods: [{type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL']}]
+            methods: [{type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'ALL', '*']}]
           })
         ]
       },
@@ -73,7 +73,7 @@ module.exports = class AccessManager{
     };
   }
 
-  importAcl(){
+  async importAcl(){
     let jsonFile = aclExampleFile;
     let f = process.argv.join('$$$').split('--import-acl=');
     if(f[1]){
@@ -85,8 +85,11 @@ module.exports = class AccessManager{
     // save to the db
     let i = 0;
     for(let entry of entries){
-      entry = new this.models.acl(entry);
-      entry.save(()=>{
+      entry = await new this.models.acl(entry);
+      entry.save((err)=>{
+        if(err){
+          console.error(err);
+        }
         i++;
         if(i == entries.length){ // shutdown when we are done importing
           mongoose.connection.close(()=>{
