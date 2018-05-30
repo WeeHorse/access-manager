@@ -80,25 +80,36 @@ module.exports = class AccessManager{
       jsonFile = f[1].split('$$$')[0];
     }
     let entries = require(jsonFile);
+    if(!entries.push){
+      console.error("Fatal error: Json file data not iterable, must be an array");
+      process.exit(0);
+    }
+    console.info('To import %d ACL definitions from JSON', entries.length);
     // drop previous acl
     this.models.acl.collection.drop();
     // save to the db
     let i = 0;
+    let errs = 0;
     for(let entry of entries){
       entry = await new this.models.acl(entry);
-      entry.save((err)=>{
-        if(err){
-          console.error(err);
-        }
-        i++;
-        if(i == entries.length){ // shutdown when we are done importing
-          mongoose.connection.close(()=>{
-            console.log('ACL Import done, mongoose connection closed');
-            process.exit(0);
-          });
-        }
-      });
+      let result = await entry.save();
+      if(!result || !result._id){
+        errs++;
+        console.error('ACL import entry error', result, 'entry is', entry);
+      }
+      i++;
+      if(i == entries.length){ // shutdown when we are done importing
+        mongoose.connection.close(()=>{
+          console.info('ACL import done, mongoose connection closed, %d definitions stored.', i - errs);
+          if(errs > 0){
+            console.info('%d definitions were not imported due to errors', errs);
+          }
+          process.exit(0);
+        });
+      }
+
     }
+
   }
 
 }
